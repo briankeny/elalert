@@ -262,5 +262,5 @@ class ElasticAlerts:
                         logging.info(f'[+] Cleanup Removed file {fl}')
                 except Exception as e:
                     logging.error(f'[?] Error removing file {fl}: {str(e)}')
-        with open(self.app_log_file,'w') as f:
-            f.write('')
+            with open(self.app_log_file,'w') as f:
+                f.write('')
