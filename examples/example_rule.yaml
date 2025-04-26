@@ -1,0 +1,45 @@
+name: "Elastic Kibana Alerts"
+config:
+  # Overrides the default global configs configured using .env
+  # Set es index to fetch alerts from [optional] default is .alerts-*
+  es_index: ".alerts-*"
+  # es query body structured correctly observing eql syntax [optional] there is a default query using range timeframe
+  es_body:
+    # es_query
+    query:
+      bool:
+        filter:
+          - term:
+              event.kind: "signal"
+          - range:
+              "@timestamp":
+                gte: "now-60s"
+                lte: "now"
+  # Use your timezone (Implemented using pytz) [optional] default is UTC
+  pytz_timezone: "Africa/Nairobi"
+  # Interval to run this rule in seconds [optional] default is 60
+  interval: 60
+  # Maximum number of alerts to send per batch [optional] default is 5
+  max_alerts_per_batch: 10
+  # Timeframe to look for alert in seconds [optional]
+  timeframe: 300
+  # Adjust verbose output True/False. Default is False or .env value [optional]
+  verbose: 'false'
+  # Call back url to send this alert to [optional] 
+  webhook_url: ''
+  # A list of words to be used for ignored alert from alert reason [optional]
+  ignoredalert_keywords: 
+    - ''
+  # Output format config only customizable via yaml
+  # Customize alert output format jinja2 template format [optional] there is a default template
+  message_template: |
+    {% if alert.get('kibana.alert.status', 'active') == 'active' %}🔴{% else %}🟢{% endif %} **: {{ alert.get('kibana.alert.rule.name','')}} ** 🚨
+    
+    **Alert Status**: {{ alert.get('kibana.alert.status', 'N/A') }}
+    **started**: {{ alert.get('kibana.alert.start', 'N/A') }}
+    **Duration**: {{ duration_format(alert.get('kibana.alert.duration.us', 0)) }}
+    **Timestamp**: {{ alert.get('@timestamp','') }}
+
+    **Reason**: {{ alert.get('kibana.alert.reason','') }}
+    **Rule category**:  {{ alert.get('kibana.alert.rule.category', 'N/A') }}
+    **Rule**: {{ alert.get('kibana.alert.rule.name','')}}
