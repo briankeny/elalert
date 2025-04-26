@@ -4,7 +4,7 @@ Elalert is an alerting tool for Elastic Stack. It monitors Elasticsearch data fo
 ## Prerequisites
 - Python 3.x
 - Required dependencies installed (see installation section)
-- Elastic Kibana API key stored in a `.env` file or passed via cli arguments
+- Elastic API key stored in a `.env` file in the project root
 
 ## Installation
 1. Clone the repository:
@@ -45,7 +45,35 @@ Elalert is an alerting tool for Elastic Stack. It monitors Elasticsearch data fo
    elastic_url=<your-elastic-url>
    elastic_api_key=<your-elastic-api-key>
    ```
-4. Create a rules directory and add rules using format in example_rule.yaml
+4. Create a rules directory and add rules using format in examples/example_rule.yaml
+   ```bash
+      mkdir rules 
+   ```
+
+### 1. Run as an Executable Script
+Ensure all your environment variables are properly configured
+
+```bash
+ python main.py
+```
+
+Alternatively
+
+Make the script executable:
+```bash
+chmod +x main.py
+```
+
+Add a shebang line at the beginning of `main.py`: Ensure that the path to your bin/env is correct
+
+```python
+#!/usr/bin/env python3
+```
+Then execute the script directly:
+```bash
+./main.py 
+```
+
 
 ### 2. Run with Docker
 #### Build the Docker image:
@@ -85,30 +113,6 @@ docker rm elalert
 ### Remove the image (optional)
 ```bash
 docker rmi elalert:latest
-```
-
-### 3. Run as an Executable Script
-Ensure all your environment variables are properly configured
-
-```bash
- python main.py
-```
-
-Alternatively
-
-Make the script executable:
-```bash
-chmod +x main.py
-```
-
-Add a shebang line at the beginning of `main.py`: Ensure that the path to your bin/env is correct
-
-```python
-#!/usr/bin/env python3
-```
-Then execute the script directly:
-```bash
-./main.py 
 ```
 
 ## Testing
