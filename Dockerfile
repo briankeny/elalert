@@ -1,5 +1,5 @@
 # Use a multi-stage build to keep the final image small
-FROM python:3.13.1-slim as builder
+FROM python:3.13-slim as builder
 
 WORKDIR /app
 
@@ -14,7 +14,7 @@ RUN python -m venv /opt/venv && \
 COPY . .
 
 # Final stage
-FROM python:3.13.1-slim
+FROM python:3.13-slim
 
 WORKDIR /app
 
@@ -25,11 +25,11 @@ COPY --from=builder /opt/venv /opt/venv
 COPY . .
 
 # Create a non-root user and switch to it
-RUN useradd -m elalert && \
-    chown -R elalert:elalert /app && \ 
+RUN useradd -m alert && \
+    chown -R alert:alert /app  && \ 
     chmod -R 755 /app
 
-USER elalert
+USER alert
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1 \

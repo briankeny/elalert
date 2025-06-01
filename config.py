@@ -5,7 +5,7 @@ import logging
 
 # This python function loads rules config from rules folder
 class Config:
-    def __init__(self,client,rules_folder='rules',configs_json_file='elalert_rules.json',lock_folder='lock'):
+    def __init__(self,client,rules_folder='rules',configs_json_file='Elalert_rules.json',lock_folder='lock'):
         self.es_client = client
         self.RULES_FOLDER_PATH = rules_folder
         self.LOCK_FOLDER = lock_folder
@@ -62,7 +62,7 @@ class Config:
                 'config': extracted_config
             }
         else:
-            raise ValueError(f'Content {file_content} is not a proper elalert rule format')
+            raise ValueError(f'Content {file_content} is not a proper Elalert rule format')
     
     # Check the yaml syntax
     def check_yaml_syntax(self, config=None, mandatory_config_keys=None):
@@ -92,24 +92,25 @@ class Config:
 
             
     # Return a list of yaml files in the rules directory
+   # config.py (adjust path handling)
     def mount_rules_folder_return_yaml_files(self):
         yaml_files = []
         if os.path.exists(self.RULES_FOLDER_PATH):
-            for _, _, files in os.walk(self.RULES_FOLDER_PATH):
-                yaml_files.extend([
-                    f 
-                    for f in files 
-                    if f.lower().endswith(('.yaml', '.yml'))
-                ])
-            return yaml_files
-        return []
+            for root, _, files in os.walk(self.RULES_FOLDER_PATH):
+                for f in files:
+                    if f.lower().endswith(('.yaml', '.yml')):
+                        # Use relative path from mount root
+                        rel_path = os.path.relpath(os.path.join(root, f), self.RULES_FOLDER_PATH)
+                        yaml_files.append(rel_path)
+        return yaml_files
 
     # Save a formatted rule config to rule json file
     def save_passed_rules_configs_to_file_in_lock_folder(self,data=None):
         if not os.path.exists(self.LOCK_FOLDER):
             os.mkdir(self.LOCK_FOLDER)
         new_file_path = os.path.join(self.LOCK_FOLDER,self.CONFIGS_JSON_FILE)
-        self.save_to_json(data=data,file_name_or_path=new_file_path)
+        unique_data = [json.loads(x) for x in {json.dumps(d, sort_keys=True) for d in data}]
+        self.save_to_json(data=unique_data,file_name_or_path=new_file_path)
     
     # Read the contents of yaml rule file 
     def read_rule_yaml_file_content(self,file_name_or_path=None):
@@ -134,41 +135,3 @@ class Config:
         except Exception as e:
             logging.error(f'[?] Could not save JSON file {file_name_or_path}: {str(e)}')
             
-    def sanitize_es_query_body(self,es_body):
-        """
-        Auto-cleans an ES query body by fixing common mistakes like invalid field names.
-        Logs corrections and skips obviously broken filters.
-        """
-
-        if not isinstance(es_body, dict):
-            raise ValueError("es_body must be a dictionary")
-
-        try:
-            # Navigate into the query -> bool -> filter path
-            filters = es_body.get("query", {}).get("bool", {}).get("filter", [])
-
-            if not isinstance(filters, list):
-                raise ValueError("Expected 'filter' to be a list")
-
-            cleaned_filters = []
-            for f in filters:
-                if not isinstance(f, dict):
-                    logging.warning(f"[!] Ignored non-dict filter: {f}")
-                    continue
-
-                # Check for 'exists' with bad field key like field" instead of field
-                if "exists" in f and isinstance(f["exists"], dict):
-                    exists_field = list(f["exists"].keys())[0]
-                    if 'field"' in f["exists"]:
-                        value = f["exists"].pop('field"')
-                        f["exists"]["field"] = value
-                        logging.info(f"[✓] Fixed malformed exists field name")
-
-                cleaned_filters.append(f)
-
-            es_body["query"]["bool"]["filter"] = cleaned_filters
-            return es_body
-
-        except Exception as e:
-            logging.error(f"[!] Error sanitizing ES body: {str(e)}")
-            raise

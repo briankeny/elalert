@@ -11,7 +11,7 @@ def mock_es():
 def test_yaml_loading(mock_es):
     config = Config(client=mock_es, rules_folder='examples')
     valid_rules = config.configure_app_rules()
-    assert len(valid_rules) == 1  # Assuming 1 valid test rule
+    assert len(valid_rules) == 1 
 
 def test_invalid_query(mock_es):
     mock_es.indices.validate_query.side_effect = Exception("Invalid query")

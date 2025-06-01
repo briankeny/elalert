@@ -2,6 +2,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import json
 import logging
 import os
+import sqlite3
 from dotenv import load_dotenv
 from elasticsearch import Elasticsearch
 from alerts import  ElasticAlerts
@@ -13,6 +14,37 @@ def logger_config(log_file='Elalert.log',log_level=logging.INFO):
                         format='%(asctime)s: %(levelname)s: %(message)s', 
                         level=log_level)
     return logging
+
+#configure db
+def _initialize_sqlite(verbose=False):
+        """Initialize SQLite database and create alerts table."""
+        try:
+            with sqlite3.connect('alerts.db') as conn:
+                cursor = conn.cursor()
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS alerts (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        kibana_alert_rule_uuid TEXT,
+                        kibana_alert_instance_id TEXT,
+                        kibana_alert_start TEXT,
+                        kibana_alert_end TEXT,
+                        kibana_alert_status TEXT,
+                        UNIQUE(
+                            kibana_alert_rule_uuid,
+                            kibana_alert_instance_id,
+                            kibana_alert_start,
+                            kibana_alert_end,
+                            kibana_alert_status
+                        )
+                    )
+                ''')
+                conn.commit()
+                if verbose:
+                    logging.info(f'[+] Initialized SQLite database: alerts.db')
+                return True
+        except sqlite3.Error as e:
+            logging.error(f'[?] Error initializing SQLite database: {str(e)}')
+            return False
 
 # Load data from json file
 def load_from_json(file_name_or_path=None):
@@ -53,7 +85,7 @@ def load_env_variables():
     max_alerts_per_batch = get_env_variable('max_alerts_per_batch',3,int)
     hits_size = get_env_variable('hits_size',100,int)
     save_file = os.getenv('save_file','alerts.json')
-    save =  get_env_variable('save', True, bool)
+    save =  get_env_variable('save','true', str).lower() in ['yes', 'true', '1', 't', 'y']
     verbose = os.getenv('verbose','True').lower() in ['yes', 'true', '1', 't', 'y']
     pytz_timezone = get_env_variable('pytz_timezone','Africa/Nairobi',str)
     timeframe = get_env_variable('timeframe',interval,int)
@@ -73,7 +105,7 @@ def load_env_variables():
             'pytz_timezone': pytz_timezone,
             'elastic_url': url,
             'elastic_api_key': elastic_api_key,
-            'es_body': None, #body can only be set using yaml config
+            'es_body': None,
             'interval': interval,
             'ignored_alert_keywords': ignored_alert_keywords,
             'cleanup_schedule':cleanup_schedule,
@@ -114,7 +146,7 @@ def main(verbose=False):
     # Rules Base Folder
     rules_folder = os.getenv('rules_folder','rules')
     # Rules configs json save file
-    configs_json_file = 'elalert_rules.json'
+    configs_json_file = 'Elalert_rules.json'
     # lock folder
     lock_folder = 'lock'
     # Start config setup for rules if any in 
@@ -139,7 +171,10 @@ def main(verbose=False):
     # If no rules are configured, use base config
     if not custom_rules:
         custom_rules.append(base_config)
-       
+    # Initialize db
+    initdb = _initialize_sqlite(verbose=verbose)
+    if not initdb:
+        base_config['storage_type'] = 'file_storage'   
     # Start monitoring  
     with ThreadPoolExecutor(max_workers=min(len(custom_rules), 5) ) as executor:
         while True:

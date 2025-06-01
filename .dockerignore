@@ -5,6 +5,7 @@ rules
 .pytest_cache
 lock
 .env.example
+.env
 log*
 *.log
 report*
@@ -12,3 +13,4 @@ report*
 *.json
 .env.prod
 .env.dev
+*.db

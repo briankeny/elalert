@@ -10,6 +10,8 @@ managed_context
 report* 
 *.json
 rules
+*.db
+lock
 
 #Exclude log files
 *.log
