@@ -10,7 +10,7 @@ from jinja2 import BaseLoader, Environment, select_autoescape
 import aiohttp
  
 class ElasticAlerts:
-    def __init__(self,es_index='.alerts-*',webhook_url=None,timeframe=60,max_alerts_per_batch=10,hits_size=100,save_file='alerts.json',save=False,verbose=False,pytz_timezone=None,elastic_url=None,elastic_api_key=None,es_body=None,ignored_alert_keywords=[],message_template=None,interval=60,cleanup_schedule=['0:00'],app_log_file='Elalert.log',es_client=None,storage_type='sqlite'):
+    def __init__(self,es_index='.alerts-*',webhook_url=None,timeframe=60,max_alerts_per_batch=10,hits_size=100,save_file='alerts.json',save=False,verbose=False,pytz_timezone=None,elastic_url=None,elastic_api_key=None,es_body=None,ignored_alert_keywords=[],message_template=None,interval=60,cleanup_schedule=['0:00'],app_log_file='Elalert.log',es_client=None,storage_type='sqlite', sqlite_db_path='alerts.db'):
         # Settings
         self.webhook_url = webhook_url
         self.timeframe = timeframe or interval
@@ -51,8 +51,8 @@ class ElasticAlerts:
             trim_blocks=True,
             lstrip_blocks=True
         )    
-        self.SQLITE_DB = 'alerts.db'
-        self.storage_type = storage_type or 'sqlite'
+        self.SQLITE_DB =  sqlite_db_path
+        self.storage_type = storage_type
         self.cleanup_days = 1
        
     def parse_interval_timeframe_to_int(self):

@@ -16,10 +16,10 @@ def logger_config(log_file='Elalert.log',log_level=logging.INFO):
     return logging
 
 #configure db
-def _initialize_sqlite(verbose=False):
+def _initialize_sqlite(verbose=False,db_path='alerts.db'):
         """Initialize SQLite database and create alerts table."""
         try:
-            with sqlite3.connect('alerts.db') as conn:
+            with sqlite3.connect(db_path) as conn:
                 cursor = conn.cursor()
                 cursor.execute('''
                     CREATE TABLE IF NOT EXISTS alerts (
@@ -93,6 +93,8 @@ def load_env_variables():
     ignored_alert_keywords = parse_list_remove_blanks(os.getenv('ignored_alert_keywords',''))
     cleanup_schedule = parse_list_remove_blanks(os.getenv('cleanup_schedule','00:01,12:00'))
     app_log_file = os.getenv('LOG_FILE','Elalert.log')
+    sqlite_db_path = os.getenv('sqlite_db_path','alerts.db')
+    storage_type = os.getenv('storage_type','sqlite')
     return {
             'es_index': es_index, 
             'webhook_url': webhook_url,
@@ -110,7 +112,9 @@ def load_env_variables():
             'ignored_alert_keywords': ignored_alert_keywords,
             'cleanup_schedule':cleanup_schedule,
             'message_template':None,
-            'app_log_file': app_log_file
+            'app_log_file': app_log_file,
+            'sqlite_db_path':sqlite_db_path,
+            'storage_type': storage_type
             }
 
 # Main function entry point
@@ -172,7 +176,7 @@ def main(verbose=False):
     if not custom_rules:
         custom_rules.append(base_config)
     # Initialize db
-    initdb = _initialize_sqlite(verbose=verbose)
+    initdb = _initialize_sqlite(verbose=verbose,db_path=base_config['sqlite_db_path'])
     if not initdb:
         base_config['storage_type'] = 'file_storage'   
     # Start monitoring  
